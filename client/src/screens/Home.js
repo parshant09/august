@@ -133,7 +133,7 @@ const Home = () => {
 		axios.get(ALL_POST_URL, config).then((res) => {
 			setData(res.data.posts);
 		});
-	}, []);
+	}, [config]);
 
 	const likePost = (id) => {
 		axios.put(`http://localhost:5000/like`, { postId: id }, config)

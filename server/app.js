@@ -1,16 +1,8 @@
-/**
- *
- * @author Anass Ferrak aka " TheLordA " <ferrak.anass@gmail.com>
- * GitHub repo: https://github.com/TheLordA/Instagram-Clone
- *
- */
-
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
 const compression = require("compression");
 const helmet = require("helmet");
-
 const connectDB = require("./config/db.config");
 
 // Import Routes
@@ -19,67 +11,66 @@ const postRoute = require("./routes/post.route");
 const userRoute = require("./routes/user.route");
 const foodRoute = require("./routes/food.route"); // <-- Add food route
 
-/**
- * -------------- GENERAL SETUP ----------------
- */
-
-// Gives us access to variables set in the .env file via process.env.VARIABLE_NAME syntax
+// Load environment variables
 require("dotenv").config();
 
-// Connection to DB
+// Connect to the database
 connectDB();
 
 // Create the Express application object
 const app = express();
 
-// Compress the HTTP response sent back to a client
-app.use(compression()); // Compress all routes
+// Middleware setup
+app.use(compression()); // Compress all routes to reduce payload size
+app.use(helmet()); // Apply security headers
+app.use(morgan("dev")); // Log requests in development mode
 
-// Use Helmet to protect against well-known vulnerabilities
-app.use(helmet());
+// CORS setup (allow specific origins based on the environment)
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? ['http://3.129.44.248:3000'] // Production frontend URL
+  : ['http://localhost:3000']; // Development frontend (localhost)
 
-// Use Morgan in dev mode for logging
-app.use(morgan("dev"));
-
-// Set up CORS to allow us to accept requests from our client
 app.use(
   cors({
-    origin: "http://localhost:3000", // <-- location of the React app we're connecting to
-    credentials: true,
+    origin: allowedOrigins, // Restrict origins based on environment
+    credentials: true, // Allow cookies to be sent with requests
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allow specific HTTP methods
+    allowedHeaders: ["Content-Type", "Authorization"], // Allow specific headers like Content-Type and Authorization
   })
 );
 
-// Parsers
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true }));
+// Handle preflight requests explicitly for all routes (fixes CORS issues on preflight OPTIONS requests)
+app.options('*', cors()); // This will handle preflight requests for all routes
 
-/**
- * -------------- ROUTES ----------------
- */
-// Root route to check if server is running
+// Body parsers for handling JSON and URL-encoded data
+app.use(express.json({ limit: "50mb" })); // Allow larger JSON bodies (up to 50mb)
+app.use(express.urlencoded({ extended: true })); // Parse URL-encoded data
+
+// Route setup
 app.get("/", (req, res) => {
   res.send("Backend server is up and running!");
 });
 
-// Include the food route
-app.use("/api/food", foodRoute); // <-- This will handle /api/food requests
+// Register routes
+app.use("/api/food", foodRoute);
+app.use("/api/auth", authRoute);
+app.use("/api/posts", postRoute);
+app.use("/api/users", userRoute);
 
-// Other routes
-app.use("/api/auth", authRoute); // Authentication routes
-app.use("/api/posts", postRoute); // Post routes
-app.use("/api/users", userRoute); // User routes
+// General error handler (handles both sync and async errors)
+app.use((err, req, res, next) => {
+  console.error(err.stack); // Log error stack for debugging
+  res.status(err.status || 500).json({
+    message: err.message || "Internal Server Error",
+    error: process.env.NODE_ENV === 'production' ? {} : err, // Hide error stack in production for security
+  });
+});
 
-/**
- * -------------- SERVER ----------------
- */
-
-// Specify the PORT on which the server will run (5000)
+// Server setup
 const PORT = process.env.PORT || 5000;
-
-// Disabling the "X-Powered-By" tag for security
-app.disable("x-powered-by");
+app.disable("x-powered-by"); // For security: prevent Express version info from being exposed
 
 app.listen(PORT, () => {
-  console.log(`Server is running in ${process.env.NODE_ENV} mode, under port ${PORT}.`);
+  console.log(`Server is running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
 

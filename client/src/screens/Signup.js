@@ -1,9 +1,9 @@
 import React, { useState, useRef } from "react";
 import { Link, useHistory } from "react-router-dom";
 import axios from "axios";
-import { SIGNUP_URL } from "../config/constants";
+import { SIGNUP_URL } from "../config/constants"; // Ensure SIGNUP_URL is defined correctly in constants
 import Copyright from "../components/Copyight";
-import { EmailRegex } from "../utils/regex";
+import { EmailRegex } from "../utils/regex"; // Ensure this regex is defined correctly
 // Material-UI Components
 import { makeStyles } from "@material-ui/core/styles";
 import Button from "@material-ui/core/Button";
@@ -51,6 +51,7 @@ const Signup = () => {
 
   const timerRef = useRef();
 
+  // Handle input changes
   const handleInputChanges = (e) => {
     const { name, value } = e.target;
     if (name === "username") setName(value);
@@ -58,16 +59,17 @@ const Signup = () => {
     if (name === "password") setPassword(value);
   };
 
+  // Handle the form submission
   const handlePostData = () => {
     // Check if the given email has the correct format
     if (EmailRegex.test(email)) {
       axios
-        .post(SIGNUP_URL, { name, password, email })
+        .post(SIGNUP_URL, { name, password, email }, { withCredentials: true }) // Added withCredentials to allow cookies
         .then((res) => {
           const data = res.data;
           if (data.error) {
             setFormatValidation(false);
-            setAuthValidation(true);
+            setAuthValidation(true); // Show error for email already taken
           } else {
             // Show success notification
             setConfirmValidation(true);
@@ -82,7 +84,7 @@ const Signup = () => {
         });
     } else {
       setAuthValidation(false);
-      setFormatValidation(true);
+      setFormatValidation(true); // Invalid email format
     }
   };
 

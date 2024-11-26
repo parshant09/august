@@ -63,7 +63,7 @@ const UserProfilePage = () => {
 		axios.get(`http://localhost:5000/user/${userid}`, config).then((res) => {
 			setData(res.data);
 		});
-	}, []);
+	}, [config]);
 
 	const followUser = () => {
 		axios.put(`http://localhost:5000/follow`, { followId: userid }, config).then((result) => {
